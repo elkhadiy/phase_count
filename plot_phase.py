@@ -147,7 +147,10 @@ def main(args):
 
     fig, axs = plot_phases(ribbon)
 
-    plt.show()
+    if args.save:
+        plt.savefig(args.save)
+    else:
+        plt.show()
 
 # standard boilerplate for a commandline python script
 # calls the main function and sets up the commandline arguments
@@ -166,6 +169,14 @@ if __name__ == '__main__':
         "P_Opsi",
         help="pass FILE to the program",
         metavar="FILE"
+    )
+
+    PARSER.add_argument(
+        "-s",
+        "--save",
+        type=str,
+        help="Save figure to a file named FIGURE",
+        metavar="FIGURE"
     )
 
     ARGS = PARSER.parse_args()
