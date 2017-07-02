@@ -8,22 +8,13 @@ import numpy as np
 import sympy as sp
 import matplotlib.pyplot as plt
 
-# gather program code in a main() function
-def main(args):
+def extract_phases(
+        popsi_file_name,
+        radius, width, delta_y, delta_z,
+        number_samples_y, number_samples_z, snap
+    ):
 
-    # basic check for the P_Opsi file
-    if not os.path.isfile(args.P_Opsi):
-        print(args.P_Opsi + " not a valid file name")
-        sys.exit(-1)
-
-    popsi = open(args.P_Opsi, "rb")
-
-    # simulation parameters
-    radius = 5.0
-    width = 1.2
-    delta_y = delta_z = 0.07
-    number_samples_y, number_samples_z = 280, 450
-    snap = 1000
+    popsi = open(popsi_file_name, "rb")
 
     # extract phase data from P_Opsi file
     popsi.seek(number_samples_y * number_samples_z * 16 * snap)
@@ -57,11 +48,11 @@ def main(args):
     number_samples_theta = 500
     number_samples_r = 100
 
-    x_axis_samples = np.linspace(0, 2 * np.pi, number_samples_theta)
+    theta_samples = np.linspace(0, 2 * np.pi, number_samples_theta)
 
     ribbon = [np.array(
         [
-            [get(r, theta, i) for theta in x_axis_samples]
+            [get(r, theta, i) for theta in theta_samples]
             for r in np.linspace(
                 radius - width,
                 radius + width,
@@ -69,6 +60,14 @@ def main(args):
             )
         ]
     ) for i in [-1, 1]]
+
+    return ribbon
+
+def plot_phases(ribbon):
+
+    number_samples_theta = ribbon[0].shape[1]
+
+    x_axis_samples = np.linspace(0, 2 * np.pi, number_samples_theta)
 
     y_axis_samples = [np.roll(
         ribbon[i][int(len(ribbon[i])/2)],
@@ -80,7 +79,7 @@ def main(args):
 
     plt.style.use("fivethirtyeight")
 
-    _, axs = plt.subplots(2, 1, figsize=(16, 8))
+    fig, axs = plt.subplots(2, 1, figsize=(16, 8))
 
     detail_pis = np.array([0, sp.pi / 6, sp.pi / 4, sp.pi / 3, sp.pi / 2])
     minimal_pis = np.array([0, sp.pi / 4, sp.pi / 2])
@@ -126,6 +125,27 @@ def main(args):
             max(y_axis_samples[i]),
             linestyle='-.', color='g', alpha=0.3
         )
+
+    return fig, axs
+
+# gather program code in a main() function
+def main(args):
+
+    # basic check for the P_Opsi file
+    if not os.path.isfile(args.P_Opsi):
+        print(args.P_Opsi + " not a valid file name")
+        sys.exit(-1)
+
+    ribbon = extract_phases(
+        popsi_file_name=args.P_Opsi,
+        radius=5.0,
+        width=1.2,
+        delta_y=0.07, delta_z=0.07,
+        number_samples_y=280, number_samples_z=450,
+        snap=1000
+    )
+
+    fig, axs = plot_phases(ribbon)
 
     plt.show()
 
