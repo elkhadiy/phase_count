@@ -167,7 +167,7 @@ if __name__ == '__main__':
 
     PARSER.add_argument(
         "P_Opsi",
-        help="pass FILE to the program",
+        help="simulation file called FILE from which to extract phase data",
         metavar="FILE"
     )
 
@@ -175,7 +175,7 @@ if __name__ == '__main__':
         "-s",
         "--save",
         type=str,
-        help="Save figure to a file named FIGURE",
+        help="save figure to a file named FIGURE",
         metavar="FIGURE"
     )
 
