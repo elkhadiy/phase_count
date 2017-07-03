@@ -4,8 +4,10 @@ import os
 import sys
 import argparse
 #import logging
+import json
 import numpy as np
 import sympy as sp
+from scipy.spatial.distance import sqeuclidean
 import matplotlib.pyplot as plt
 
 def extract_phases(
@@ -63,6 +65,56 @@ def extract_phases(
 
     return ribbon
 
+def gen_sawtooth(winding_number, number_samples_theta):
+    ''' winding_number = +- slope '''
+
+    x_axis_samples = np.linspace(0, 2 * np.pi, number_samples_theta)
+    y_axis_samples = np.zeros(number_samples_theta)
+
+    slope_func = lambda x: winding_number * x - np.sign(winding_number) * np.pi
+
+    if winding_number:
+        x_slope_samples = int(number_samples_theta / abs(winding_number))
+    else:
+        return y_axis_samples
+
+    for i in range(abs(winding_number)):
+        for i0 in range(x_slope_samples):
+            y_axis_samples[i * x_slope_samples + i0] = slope_func(x_axis_samples[i + i0])
+
+    return y_axis_samples
+
+def find_winding_number(ribbon):
+    '''
+    find the winding numbers that minimizes the distance
+    between the phase distribution and its theoretical counter-part which is
+    the sawtooth function
+    '''
+    number_samples_theta = ribbon[0].shape[1]
+
+    y_axis_samples = [np.roll(
+        ribbon[i][int(len(ribbon[i])/2)],
+        len(ribbon[i][int(len(ribbon[i])/2)])
+        - ribbon[i][int(len(ribbon[i])/2)].argmin()
+    ) for i in [0, 1]]
+
+    def distance(winding_number, circle):
+        return sqeuclidean(
+                    gen_sawtooth(winding_number, number_samples_theta),
+                    y_axis_samples[circle]
+                )
+
+    dl = np.zeros(201)
+    dr = np.zeros(201)
+    for i in range(-100, 101, 1):
+        dl[i + 100] = distance(i, 0)
+        dr[i + 100] = distance(i, 1)
+    
+    wl = np.argmin(dl) - 100
+    wr = np.argmin(dr) - 100
+
+    return wl, wr
+
 def plot_phases(ribbon):
 
     number_samples_theta = ribbon[0].shape[1]
@@ -112,8 +164,9 @@ def plot_phases(ribbon):
         axis.spines['left'].set_color('#adaca7aa')
         axis.spines['bottom'].set_color('#adaca7aa')
 
-    axs[0].set_title('Left Circle')
-    axs[1].set_title('Right Circle')
+    circle = ['Left', 'Right']
+
+    winding_number = find_winding_number(ribbon)
 
     for i, axis in enumerate(axs):
         axis.plot(x_axis_samples, y_axis_samples[i], alpha=0.3, color='b')
@@ -125,8 +178,24 @@ def plot_phases(ribbon):
             max(y_axis_samples[i]),
             linestyle='-.', color='g', alpha=0.3
         )
+        axis.plot(
+            x_axis_samples,
+            gen_sawtooth(winding_number[i], number_samples_theta),
+            alpha=0.3, color='r'
+        )
+        axis.fill_between(
+            x_axis_samples, y_axis_samples[i],
+            gen_sawtooth(winding_number[i], number_samples_theta),
+            alpha=0.2, color='r'
+        )
+        axis.set_title(circle[i] + " Circle : " + str(winding_number[i]))
 
-    return fig, axs
+    result = {
+        'Left circle': int(winding_number[0]),
+        'Right circle': int(winding_number[1])
+    }
+
+    return fig, axs, result
 
 # gather program code in a main() function
 def main(args):
@@ -145,12 +214,16 @@ def main(args):
         snap=1000
     )
 
-    fig, axs = plot_phases(ribbon)
+    fig, axs, result = plot_phases(ribbon)
 
     if args.save:
         plt.savefig(args.save)
     else:
         plt.show()
+
+    if args.output:
+        with open(args.output, "w") as f:
+            json.dump(result, f)
 
 # standard boilerplate for a commandline python script
 # calls the main function and sets up the commandline arguments
@@ -177,6 +250,14 @@ if __name__ == '__main__':
         type=str,
         help="save figure to a file named FIGURE",
         metavar="FIGURE"
+    )
+
+    PARSER.add_argument(
+        "-o",
+        "--output",
+        type=str,
+        help="save winding number result to a file named RESULT",
+        metavar="RESULT"
     )
 
     ARGS = PARSER.parse_args()
