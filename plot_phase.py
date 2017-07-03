@@ -207,11 +207,12 @@ def main(args):
 
     ribbon = extract_phases(
         popsi_file_name=args.P_Opsi,
-        radius=5.0,
-        width=1.2,
-        delta_y=0.07, delta_z=0.07,
-        number_samples_y=280, number_samples_z=450,
-        snap=1000
+        radius=args.radius,
+        width=args.width,
+        delta_y=args.delta_y, delta_z=args.delta_z,
+        number_samples_y=args.number_samples_y,
+        number_samples_z=args.number_samples_z,
+        snap=args.snap
     )
 
     fig, axs, result = plot_phases(ribbon)
@@ -258,6 +259,62 @@ if __name__ == '__main__':
         type=str,
         help="save winding number result to a file named RESULT",
         metavar="RESULT"
+    )
+
+    PARSER.add_argument(
+        "--radius",
+        type=float,
+        help="simulation parameter",
+        metavar="RADIUS",
+        default=5.0
+    )
+
+    PARSER.add_argument(
+        "--width",
+        type=float,
+        help="simulation parameter",
+        metavar="WIDTH",
+        default=1.2
+    )
+
+    PARSER.add_argument(
+        "--delta_y",
+        type=float,
+        help="simulation parameter",
+        metavar="DELTA_Y",
+        default=0.07
+    )
+
+    PARSER.add_argument(
+        "--delta_z",
+        type=float,
+        help="simulation parameter",
+        metavar="DELTA_Z",
+        default=0.07
+    )
+
+    PARSER.add_argument(
+        "--number_samples_y",
+        type=int,
+        help="simulation parameter",
+        metavar="NB",
+        default=280
+    )
+
+    PARSER.add_argument(
+        "--number_samples_z",
+        type=int,
+        help="simulation parameter",
+        metavar="NB",
+        default=450
+    )
+
+    PARSER.add_argument(
+        "--snap",
+        type=int,
+        help="simulation parameter (number of snapshots)",
+        metavar="NB",
+        default=1000
     )
 
     ARGS = PARSER.parse_args()
